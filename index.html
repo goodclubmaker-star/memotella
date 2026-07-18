@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#75503a">
+<title>메모텔라 — 말하면, 한 권의 인생이 됩니다</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { font-size: 19px; }
+  body { font-family: -apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif; background: #f8f2e8; color: #33271f; min-height: 100vh; line-height: 1.6; word-break: keep-all; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; min-height: 100vh; }
+  h1 { font-family: Georgia, "Noto Serif KR", serif; font-size: 1.5rem; text-align: center; padding-top: 8px; letter-spacing: -0.5px; color: #5d402f; }
+  .sub { text-align: center; color: #9a7053; font-size: 0.9rem; margin-top: -8px; }
+  .bigbtn { width: 100%; border: none; border-radius: 22px; cursor: pointer; font-size: clamp(28px, 8vw, 46px); font-weight: 800; line-height: 1.3; padding: 3.6vh 12px; color: #fff; font-family: inherit; box-shadow: 0 6px 0 rgba(82,55,36,0.28); }
+  .bigbtn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(82,55,36,0.28); }
+  .brown { background: #75503a; } .green { background: #1B7F3B; } .blue { background: #1250A6; } .red { background: #C62828; }
+  .gray { background: #6b6258; font-size: clamp(19px, 5vw, 28px); padding: 2vh 12px; }
+  .status { font-size: clamp(24px, 7vw, 40px); font-weight: 800; text-align: center; padding: 8px 4px; }
+  .pulse { animation: pulse 1.2s infinite; color: #C62828; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .transcript { flex: 1; min-height: 20vh; background: #fffaf2; border: 3px solid #dfcfbb; border-radius: 16px; padding: 14px; font-size: clamp(22px, 6vw, 34px); line-height: 1.55; font-weight: 600; overflow-y: auto; white-space: pre-wrap; }
+  .interim { color: #9a8564; }
+  .qbox { background: #fdf0d2; border: 3px solid #c18b45; border-radius: 16px; padding: 14px; font-size: clamp(22px, 6vw, 32px); line-height: 1.45; font-weight: 700; }
+  .hidden { display: none !important; }
+  .card { background: #fffaf2; border: 1px solid #dfcfbb; border-radius: 16px; padding: 16px; box-shadow: 0 6px 20px rgba(78,52,34,0.06); }
+  .card h3 { font-size: 1.05rem; color: #5d402f; margin-bottom: 6px; }
+  .btn { font-size: 0.95rem; padding: 10px 14px; border-radius: 11px; border: 2px solid #b7a488; background: #fffaf2; font-family: inherit; cursor: pointer; color: #33271f; }
+  .btn.primary { background: #75503a; color: #fff; border-color: #75503a; }
+  .btn.warn { border-color: #C62828; color: #C62828; }
+  .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  input, select, textarea { font-size: 1rem; padding: 10px 12px; border-radius: 11px; border: 2px solid #cbb99c; background: #fff; font-family: inherit; width: 100%; }
+  textarea { min-height: 120px; line-height: 1.6; }
+  .chapter-title { font-family: Georgia, "Noto Serif KR", serif; font-size: 1.25rem; color: #5d402f; border-bottom: 2px solid #dfcfbb; padding: 14px 0 6px; }
+  .story { border-bottom: 1px dashed #dfcfbb; padding: 12px 0; }
+  .story .q { color: #1250A6; font-weight: 700; font-size: 0.92rem; }
+  .story .period { color: #9a7053; font-size: 0.85rem; margin: 2px 0 6px; }
+  .story .txt { white-space: pre-wrap; line-height: 1.65; }
+  .story .polished-tag { display: inline-block; background: #dfe1d5; color: #45503a; font-size: 0.75rem; border-radius: 999px; padding: 2px 9px; margin-bottom: 4px; }
+  .compare { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 10px; }
+  .compare .pane { background: #fff; border: 2px solid #dfcfbb; border-radius: 12px; padding: 12px; white-space: pre-wrap; line-height: 1.65; font-size: 0.95rem; }
+  .compare .pane.polish { border-color: #75503a; background: #fbf6ec; }
+  .compare .pane b { display: block; color: #9a7053; font-size: 0.8rem; margin-bottom: 6px; }
+  audio { width: 100%; margin-top: 8px; }
+  .notice { background: #fdf0d2; border-radius: 12px; padding: 12px; font-size: 0.92rem; line-height: 1.5; }
+  .homebtn { text-align: center; padding: 8px; }
+  .homebtn button { background: none; border: none; color: #9a7053; font-size: 0.95rem; text-decoration: underline; font-family: inherit; cursor: pointer; padding: 8px; }
+  /* book view */
+  .book { background: #fffdf8; border: 1px solid #dfcfbb; border-radius: 18px; padding: clamp(18px, 5vw, 48px); box-shadow: 0 10px 30px rgba(78,52,34,0.08); }
+  .book .cover { text-align: center; padding: 8vh 0; border-bottom: 3px double #c18b45; margin-bottom: 26px; }
+  .book .cover h2 { font-family: Georgia, "Noto Serif KR", serif; font-size: clamp(30px, 7vw, 46px); color: #5d402f; letter-spacing: -1px; }
+  .book .cover p { color: #9a7053; margin-top: 10px; }
+  .book h3 { font-family: Georgia, "Noto Serif KR", serif; font-size: 1.5rem; color: #5d402f; margin: 34px 0 12px; }
+  .book .piece { margin-bottom: 22px; }
+  .book .piece .when { color: #9a7053; font-size: 0.85rem; margin-bottom: 4px; }
+  .book .piece .body { white-space: pre-wrap; line-height: 1.85; font-size: 1.05rem; }
+  .book .family { background: #fbf6ec; border-radius: 12px; padding: 14px; white-space: pre-wrap; font-size: 0.95rem; color: #584538; }
+  @media print {
+    body { background: #fff; }
+    .no-print { display: none !important; }
+    .book { border: none; box-shadow: none; border-radius: 0; }
+    .wrap { max-width: none; padding: 0; }
+    .book h3 { page-break-after: avoid; }
+    .book .piece { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+(function(){
+  var API = 'https://kxvngoyvwtumdnczwyxs.supabase.co/functions/v1/mt/api';
+  var app = document.getElementById('app');
+
+  var SEEDS = [
+    '어릴 적 살던 고향 집은 어떤 모습이었나요? 마당과 방이 어땠는지 말씀해 주세요.',
+    '초등학교 때 담임 선생님이나 친구들 이름이 기억나세요? 그 시절 이야기를 들려주세요.',
+    '어머니께서 해 주시던 음식 중에 제일 생각나는 것은 무엇인가요?',
+    '첫 직장이나 첫 월급 받던 날이 기억나세요? 그날 무엇을 하셨나요?',
+    '군대 시절 이야기를 하나 들려주세요. 어디서 복무하셨나요?',
+    '배우자를 처음 만나셨을 때 이야기를 들려주세요. 첫인상이 어떠셨나요?',
+    '아이들이 어렸을 때 기억에 남는 일이 있으세요?',
+    '살면서 제일 자랑스러웠던 순간은 언제였나요?',
+    '명절날 고향 집 풍경은 어땠나요? 무엇을 하고 지냈나요?',
+    '지금 가족들에게 꼭 남기고 싶은 말씀이 있으세요?'
+  ];
+
+  function get(u){ return fetch(API + u).then(function(r){ return r.json(); }); }
+  function post(u, body){ return fetch(API + u, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function(r){ return r.json(); }); }
+  function patch(u, body){ return fetch(API + u, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(function(r){ return r.json(); }); }
+  function del(u){ return fetch(API + u, { method: 'DELETE' }).then(function(r){ return r.json(); }); }
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function speak(text, cb){
+    try { window.speechSynthesis.cancel(); } catch(e){}
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ko-KR'; u.rate = 0.92;
+    var done = false;
+    var fin = function(){ if (!done) { done = true; if (cb) cb(); } };
+    u.onend = fin; u.onerror = fin;
+    setTimeout(fin, 1000 + text.length * 260);
+    window.speechSynthesis.speak(u);
+  }
+  function stopSpeak(){ try { window.speechSynthesis.cancel(); } catch(e){} }
+
+  function makeRec(cont){
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) return null;
+    var r = new SR();
+    r.lang = 'ko-KR'; r.continuous = cont; r.interimResults = true; r.maxAlternatives = 1;
+    return r;
+  }
+
+  // ---------------- router ----------------
+  function route(){
+    stopSpeak(); stopAll();
+    var h = location.hash || '#home';
+    if (h.indexOf('#talk/') === 0) return renderTalk(h.slice(6));
+    if (h.indexOf('#p/') === 0) return renderProject(h.slice(3));
+    if (h.indexOf('#book/') === 0) return renderBook(h.slice(6));
+    renderHome();
+  }
+  window.addEventListener('hashchange', route);
+
+  // ---------------- home ----------------
+  function renderHome(){
+    app.innerHTML =
+      '<h1>🪶 메모텔라</h1><div class="sub">말하면, 한 권의 인생이 됩니다</div>' +
+      '<div id="plist"><div class="notice">불러오는 중...</div></div>' +
+      '<div class="card"><h3>새 인생책 시작하기</h3>' +
+        '<div style="display:flex; flex-direction:column; gap:8px;">' +
+        '<input id="npTitle" placeholder="책 제목 (예: 어머니의 이야기)">' +
+        '<input id="npName" placeholder="주인공 성함 또는 호칭 (예: 어머니)">' +
+        '<input id="npBirth" type="number" placeholder="주인공 출생 연도 (예: 1954)">' +
+        '<button class="btn primary" id="npGo">만들기</button></div></div>';
+    document.getElementById('npGo').onclick = function(){
+      var t = document.getElementById('npTitle').value.trim();
+      if (!t) { alert('책 제목을 입력해 주세요.'); return; }
+      var by = parseInt(document.getElementById('npBirth').value);
+      post('/projects', { title: t, subject_name: document.getElementById('npName').value.trim(), birth_year: isNaN(by) ? undefined : by })
+        .then(function(r){ if (r.project) location.hash = '#p/' + r.project.id; else alert(r.error || '실패'); });
+    };
+    get('/projects').then(function(r){
+      var el = document.getElementById('plist');
+      var ps = r.projects || [];
+      if (!ps.length) { el.innerHTML = '<div class="notice">아직 만든 인생책이 없습니다. 아래에서 시작해 보세요.</div>'; return; }
+      el.innerHTML = ps.map(function(p){
+        return '<div class="card" style="margin-bottom:10px;"><h3>📖 ' + esc(p.title) + '</h3>' +
+          '<div class="row" style="margin-top:8px;">' +
+          '<button class="btn primary" onclick="location.hash=\'#talk/' + p.id + '\'">🎙 인터뷰 (어르신 화면)</button>' +
+          '<button class="btn" onclick="location.hash=\'#p/' + p.id + '\'">📚 기록 관리 (가족용)</button>' +
+          '<button class="btn" onclick="location.hash=\'#book/' + p.id + '\'">📕 웹책 보기</button>' +
+          '</div></div>';
+      }).join('');
+    });
+  }
+
+  // ---------------- interview (elder) ----------------
+  var T = { state: 'idle', rec: null, finalText: '', pending: '', question: '', asked: [], pid: null, projName: '',
+            media: null, recorder: null, chunks: [], audioBlob: null, periodTries: 0, wakeLock: null };
+
+  function stopAll(){
+    if (T.rec) { try { T.rec.onend = null; T.rec.stop(); } catch(e){} T.rec = null; }
+    if (T.recorder && T.recorder.state !== 'inactive') { try { T.recorder.stop(); } catch(e){} }
+    if (T.media) { try { T.media.getTracks().forEach(function(t){ t.stop(); }); } catch(e){} T.media = null; }
+    T.recorder = null;
+    if (T.wakeLock) { try { T.wakeLock.release(); } catch(e){} T.wakeLock = null; }
+    T.state = 'idle';
+  }
+  function keepAwake(){
+    if (navigator.wakeLock && navigator.wakeLock.request) {
+      navigator.wakeLock.request('screen').then(function(wl){ T.wakeLock = wl; }).catch(function(){});
+    }
+  }
+
+  function renderTalk(pid){
+    T.pid = pid; T.asked = [];
+    app.innerHTML =
+      '<h1>🎙 이야기 들려주세요</h1>' +
+      '<div id="scr"></div>' +
+      '<div class="homebtn no-print"><button onclick="location.hash=\'#p/' + pid + '\'">가족용 화면으로</button></div>';
+    talkIdle();
+  }
+
+  function talkIdle(msg){
+    stopAll();
+    var scr = document.getElementById('scr'); if (!scr) return;
+    scr.innerHTML =
+      '<div class="status">' + esc(msg || '단추를 눌러 주세요') + '</div>' +
+      '<div style="display:flex; flex-direction:column; gap:12px;">' +
+      '<button class="bigbtn green" id="tStart">🎤 이야기<br>시작하기</button>' +
+      '<button class="bigbtn blue" id="tSeed">❓ 질문 듣고<br>이야기하기</button></div>';
+    document.getElementById('tStart').onclick = function(){ startTalk(null); };
+    document.getElementById('tSeed').onclick = function(){ startTalk(SEEDS[Math.floor(Math.random() * SEEDS.length)]); };
+  }
+
+  function startTalk(question){
+    if (!makeRec(true)) { speak('죄송합니다. 이 전화기에서는 음성 입력이 되지 않습니다. 크롬 브라우저로 열어 주세요.'); return; }
+    T.question = question || '';
+    T.finalText = ''; T.chunks = []; T.audioBlob = null;
+    var scr = document.getElementById('scr');
+    scr.innerHTML =
+      (question ? '<div class="qbox">❓ ' + esc(question) + '</div>' : '') +
+      '<div class="status pulse">🔴 듣고 있어요...</div>' +
+      '<div class="transcript" id="tTxt"></div>' +
+      '<button class="bigbtn red" id="tDone">✅ 다 했어요</button>' +
+      '<button class="bigbtn gray" id="tCancel">그만두기</button>';
+    document.getElementById('tDone').onclick = askPeriod;
+    document.getElementById('tCancel').onclick = function(){ talkIdle(); };
+    keepAwake();
+    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder) {
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+        T.media = stream;
+        try {
+          T.recorder = new MediaRecorder(stream);
+          T.recorder.ondataavailable = function(ev){ if (ev.data && ev.data.size) T.chunks.push(ev.data); };
+          T.recorder.onstop = function(){ if (T.chunks.length) T.audioBlob = new Blob(T.chunks, { type: 'audio/webm' }); };
+          T.recorder.start(1000);
+        } catch(e){}
+      }).catch(function(){});
+    }
+    var intro = question ? question + ' 천천히 편하게 말씀해 주세요.' : '네, 듣고 있어요. 편하게 이야기해 주세요. 다 하시면 빨간 단추를 눌러 주세요.';
+    T.state = 'listening';
+    speak(intro, function(){ beginTalkRec(); });
+  }
+
+  function beginTalkRec(){
+    if (T.state !== 'listening') return;
+    T.rec = makeRec(true);
+    if (!T.rec) return;
+    T.rec.onresult = function(ev){
+      var interim = '';
+      for (var i = ev.resultIndex; i < ev.results.length; i++) {
+        var t = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) T.finalText += t + ' '; else interim += t;
+      }
+      var el = document.getElementById('tTxt'); if (!el) return;
+      el.innerHTML = '';
+      el.appendChild(document.createTextNode(T.finalText));
+      var sp = document.createElement('span'); sp.className = 'interim';
+      sp.appendChild(document.createTextNode(interim)); el.appendChild(sp);
+      el.scrollTop = el.scrollHeight;
+    };
+    T.rec.onerror = function(ev){
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+        talkIdle(); speak('마이크 사용을 허용해 주셔야 합니다. 화면에 허용 창이 나오면 허용을 눌러 주세요.');
+      }
+    };
+    T.rec.onend = function(){ if (T.state === 'listening') { try { beginTalkRec(); } catch(e){} } };
+    try { T.rec.start(); } catch(e){}
+  }
+
+  function askPeriod(){
+    if (T.rec) { try { T.rec.onend = null; T.rec.stop(); } catch(e){} T.rec = null; }
+    if (T.recorder && T.recorder.state !== 'inactive') { try { T.recorder.stop(); } catch(e){} }
+    T.pending = T.finalText.trim();
+    if (!T.pending) { talkIdle(); speak('이야기가 들리지 않았어요. 다시 한 번 초록 단추를 누르고 말씀해 주세요.'); return; }
+    T.state = 'period'; T.periodTries = 0;
+    var scr = document.getElementById('scr');
+    scr.innerHTML =
+      '<div class="status">언제쯤 일인가요?</div>' +
+      '<div class="qbox">몇 년도인지, 몇 살 때인지<br>말씀해 주세요</div>' +
+      '<div class="status pulse">🔴 듣고 있어요...</div>' +
+      '<div class="transcript" id="pTxt" style="min-height:10vh;"></div>' +
+      '<button class="bigbtn gray" id="pSkip">잘 모르겠어요 (건너뛰기)</button>';
+    document.getElementById('pSkip').onclick = function(){ if (T.state === 'period') saveTalk(null); };
+    speak('잘 들었습니다. 방금 이야기는 언제쯤 있었던 일인가요? 몇 년도인지, 아니면 몇 살 때쯤인지 말씀해 주세요.', function(){ beginPeriodRec(); });
+  }
+
+  function beginPeriodRec(){
+    if (T.state !== 'period') return;
+    T.rec = makeRec(false);
+    if (!T.rec) { saveTalk(null); return; }
+    var got = '';
+    T.rec.onresult = function(ev){
+      for (var i = 0; i < ev.results.length; i++) {
+        if (ev.results[i].isFinal) got += ev.results[i][0].transcript + ' ';
+        else { var el = document.getElementById('pTxt'); if (el) el.textContent = ev.results[i][0].transcript; }
+      }
+      if (got.trim()) { var el2 = document.getElementById('pTxt'); if (el2) el2.textContent = got.trim(); }
+    };
+    T.rec.onerror = function(){};
+    T.rec.onend = function(){
+      if (T.state !== 'period') return;
+      var t = got.trim();
+      if (t) saveTalk(t);
+      else if (T.periodTries < 1) { T.periodTries++; speak('언제쯤 일인지 한 번만 더 말씀해 주세요. 잘 모르시면 그냥 두셔도 됩니다.', function(){ beginPeriodRec(); }); }
+      else saveTalk(null);
+    };
+    try { T.rec.start(); } catch(e){}
+  }
+
+  function saveTalk(periodText){
+    T.state = 'saving';
+    var scr = document.getElementById('scr');
+    scr.innerHTML = '<div class="status" style="padding-top:6vh;">💾 저장하는 중...</div>';
+    post('/stories', { project_id: T.pid, question: T.question || undefined, answer_raw: T.pending, period_text: periodText || '' })
+      .then(function(r){
+        if (!r.story) { talkIdle(); speak('저장 중에 문제가 생겼습니다. 잠시 후 다시 말씀해 주세요.'); return; }
+        var sid = r.story.id;
+        if (T.audioBlob && T.audioBlob.size > 500) {
+          fetch(API + '/audio?story_id=' + sid, { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: T.audioBlob }).catch(function(){});
+        }
+        if (T.question) T.asked.push(T.question);
+        speak((periodText ? periodText + ' 이야기, ' : '이야기를 ') + '잘 저장했습니다. 다음 질문을 준비하고 있어요.');
+        post('/interview/next', { question: T.question, answer: T.pending, recent: T.asked })
+          .then(function(n){ offerFollowUp(n.question || null); })
+          .catch(function(){ offerFollowUp(null); });
+      })
+      .catch(function(){ talkIdle(); speak('인터넷 연결이 좋지 않아 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.'); });
+  }
+
+  function offerFollowUp(q){
+    if (T.state !== 'saving') return;
+    var scr = document.getElementById('scr'); if (!scr) return;
+    if (!q) { talkIdle('✅ 잘 저장했어요!'); return; }
+    T.state = 'offer';
+    scr.innerHTML =
+      '<div class="status">✅ 잘 저장했어요!</div>' +
+      '<div class="qbox">❓ ' + esc(q) + '</div>' +
+      '<div style="display:flex; flex-direction:column; gap:12px;">' +
+      '<button class="bigbtn green" id="fYes">👍 이 질문에<br>대답하기</button>' +
+      '<button class="bigbtn gray" id="fNo">오늘은 그만할래요</button></div>';
+    document.getElementById('fYes').onclick = function(){ startTalk(q); };
+    document.getElementById('fNo').onclick = function(){ talkIdle(); speak('오늘도 좋은 이야기 감사합니다. 편히 쉬세요.'); };
+    speak('이어서 하나만 더 여쭤볼까요? ' + q + ' 대답하시려면 초록 단추를 눌러 주세요.');
+  }
+
+  // ---------------- project (family) ----------------
+  var P = { data: null };
+
+  function renderProject(pid){
+    app.innerHTML = '<h1>📚 기록 관리</h1><div id="pBody"><div class="notice">불러오는 중...</div></div>' +
+      '<div class="homebtn no-print"><button onclick="location.hash=\'#home\'">처음으로</button></div>';
+    get('/project?id=' + pid).then(function(r){
+      if (!r.project) { document.getElementById('pBody').innerHTML = '<div class="notice">찾을 수 없습니다.</div>'; return; }
+      P.data = r;
+      drawProject();
+    });
+  }
+
+  function drawProject(){
+    var r = P.data;
+    var el = document.getElementById('pBody'); if (!el) return;
+    var html =
+      '<div class="card"><h3>📖 ' + esc(r.project.title) + '</h3>' +
+      '<div class="row" style="margin-top:8px;">' +
+      '<button class="btn primary" onclick="location.hash=\'#talk/' + r.project.id + '\'">🎙 인터뷰 시작</button>' +
+      '<button class="btn" onclick="location.hash=\'#book/' + r.project.id + '\'">📕 웹책 보기</button>' +
+      '</div></div>';
+    var byChapter = {};
+    (r.stories || []).forEach(function(s){ var k = s.chapter_id || 'none'; (byChapter[k] = byChapter[k] || []).push(s); });
+    var groups = r.chapters.slice();
+    groups.push({ id: 'none', title: '아직 분류 안 된 이야기' });
+    groups.forEach(function(ch){
+      var list = byChapter[ch.id] || [];
+      if (ch.id === 'none' && !list.length) return;
+      html += '<div class="chapter-title">' + esc(ch.title) + ' <span style="font-size:0.8rem;color:#9a7053;">(' + list.length + '편)</span></div>';
+      list.sort(function(a,b){ return (a.parsed_year || 9998) - (b.parsed_year || 9998); });
+      list.forEach(function(s){ html += storyHtml(s, r.chapters); });
+      if (!list.length) html += '<div style="color:#9a7053; font-size:0.9rem; padding:8px 0;">아직 이야기가 없습니다.</div>';
+    });
+    el.innerHTML = html;
+    el.querySelectorAll('[data-act]').forEach(function(b){ b.onclick = function(){ storyAction(b.dataset.act, b.dataset.id, b); }; });
+    el.querySelectorAll('select[data-move]').forEach(function(sel){
+      sel.onchange = function(){
+        patch('/stories?id=' + sel.dataset.move, { chapter_id: sel.value || null }).then(function(){ renderProject(r.project.id); });
+      };
+    });
+  }
+
+  function storyHtml(s, chapters){
+    var showPolished = s.polish_approved && s.answer_polished;
+    var opts = '<option value="">챕터 이동...</option>' + chapters.map(function(c){
+      return '<option value="' + c.id + '"' + (c.id === s.chapter_id ? ' selected' : '') + '>' + esc(c.title) + '</option>';
+    }).join('');
+    return '<div class="story" id="st-' + s.id + '">' +
+      (s.question ? '<div class="q">❓ ' + esc(s.question) + '</div>' : '') +
+      '<div class="period">🕰 ' + esc(s.period_text || '시기 미상') + (s.parsed_year ? ' · ' + s.parsed_year + '년 무렵' : '') + ' · 기록 ' + new Date(s.created_at).toLocaleDateString('ko-KR') + '</div>' +
+      (showPolished ? '<span class="polished-tag">✨ 다듬은 글 (승인됨)</span>' : '') +
+      '<div class="txt">' + esc(showPolished ? s.answer_polished : s.answer_raw) + '</div>' +
+      (s.audio_path ? '<audio controls preload="none" src="' + API + '/audio?story_id=' + s.id + '"></audio>' : '') +
+      '<div class="row" style="margin-top:10px;">' +
+        '<button class="btn" data-act="polish" data-id="' + s.id + '">✨ AI로 다듬기</button>' +
+        '<button class="btn" data-act="period" data-id="' + s.id + '">시기 수정</button>' +
+        '<select style="width:auto;" data-move="' + s.id + '">' + opts + '</select>' +
+        '<button class="btn warn" data-act="del" data-id="' + s.id + '">삭제</button>' +
+      '</div><div class="compare-slot"></div></div>';
+  }
+
+  function storyAction(act, id, btn){
+    var pid = P.data.project.id;
+    if (act === 'del') {
+      if (!confirm('이 이야기를 정말 삭제할까요? 음성 기록도 함께 삭제됩니다.')) return;
+      del('/stories?id=' + id).then(function(){ renderProject(pid); });
+    } else if (act === 'period') {
+      var cur = '';
+      P.data.stories.forEach(function(s){ if (s.id === id && s.period_text) cur = s.period_text; });
+      var np = prompt('시기를 입력하세요 (예: 1965년, 열두 살 때, 군대 시절)', cur);
+      if (np === null) return;
+      patch('/stories?id=' + id, { period_text: np }).then(function(){ renderProject(pid); });
+    } else if (act === 'polish') {
+      btn.disabled = true; btn.textContent = '✨ 다듬는 중...';
+      post('/polish', { story_id: id }).then(function(r){
+        btn.disabled = false; btn.textContent = '✨ AI로 다듬기';
+        if (!r.polished) { alert(r.error || '다듬기에 실패했습니다.'); return; }
+        var slot = document.querySelector('#st-' + id + ' .compare-slot');
+        slot.innerHTML =
+          '<div class="compare">' +
+          '<div class="pane"><b>말씀하신 원문 (그대로 보존)</b>' + esc(r.raw) + '</div>' +
+          '<div class="pane polish"><b>✨ AI가 다듬은 글</b><textarea id="ed-' + id + '" style="border:none; background:transparent; padding:0; min-height:140px; width:100%;">' + esc(r.polished) + '</textarea></div>' +
+          '</div><div class="row" style="margin-top:8px;">' +
+          '<button class="btn primary" id="ok-' + id + '">✔ 이 글로 승인</button>' +
+          '<button class="btn" id="no-' + id + '">닫기</button></div>';
+        document.getElementById('ok-' + id).onclick = function(){
+          post('/approve', { story_id: id, approved: true, text: document.getElementById('ed-' + id).value })
+            .then(function(){ renderProject(pid); });
+        };
+        document.getElementById('no-' + id).onclick = function(){ slot.innerHTML = ''; };
+      });
+    }
+  }
+
+  // ---------------- book ----------------
+  function renderBook(pid){
+    app.innerHTML = '<div id="bBody"><div class="notice">책을 준비하는 중...</div></div>' +
+      '<div class="row no-print" style="justify-content:center; padding:10px;">' +
+      '<button class="btn primary" onclick="window.print()">🖨 PDF로 저장 / 인쇄</button>' +
+      '<button class="btn" id="bRead">🔊 읽어주기</button>' +
+      '<button class="btn" id="bStop">멈춤</button>' +
+      '<button class="btn" onclick="history.back()">← 돌아가기</button></div>';
+    get('/project?id=' + pid).then(function(r){
+      if (!r.project) return;
+      var byChapter = {};
+      (r.stories || []).forEach(function(s){ var k = s.chapter_id || 'none'; (byChapter[k] = byChapter[k] || []).push(s); });
+      var html = '<div class="book"><div class="cover"><h2>' + esc(r.project.title) + '</h2>' +
+        '<p>' + (r.project.subject_name ? esc(r.project.subject_name) + (r.project.birth_year ? ' · ' + r.project.birth_year + '년생' : '') : '') + '</p>' +
+        '<p style="font-size:0.85rem;">메모텔라가 함께 엮은 인생책 · ' + new Date().toLocaleDateString('ko-KR') + '</p></div>';
+      if (r.project.family_info) html += '<h3>우리 가족</h3><div class="family">' + esc(r.project.family_info) + '</div>';
+      var readParts = [r.project.title];
+      var groups = r.chapters.slice(); groups.push({ id: 'none', title: '그 밖의 이야기' });
+      groups.forEach(function(ch){
+        var list = byChapter[ch.id] || [];
+        if (!list.length) return;
+        list.sort(function(a,b){ return (a.parsed_year || 9998) - (b.parsed_year || 9998); });
+        html += '<h3>' + esc(ch.title) + '</h3>';
+        readParts.push(ch.title);
+        list.forEach(function(s){
+          var body = (s.polish_approved && s.answer_polished) ? s.answer_polished : s.answer_raw;
+          html += '<div class="piece">' + (s.period_text ? '<div class="when">' + esc(s.period_text) + '</div>' : '') +
+            '<div class="body">' + esc(body) + '</div></div>';
+          readParts.push(body);
+        });
+      });
+      html += '</div>';
+      document.getElementById('bBody').innerHTML = html;
+      document.getElementById('bRead').onclick = function(){
+        stopSpeak();
+        readParts.forEach(function(t){ var u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; u.rate = 0.92; window.speechSynthesis.speak(u); });
+      };
+      document.getElementById('bStop').onclick = stopSpeak;
+    });
+  }
+
+  route();
+})();
+</script>
+</body>
+</html>
