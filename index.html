@@ -10,23 +10,34 @@
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html { font-size: 19px; }
   body { font-family: -apple-system, "Noto Sans KR", "Malgun Gothic", sans-serif; background: #f8f2e8; color: #33271f; min-height: 100vh; line-height: 1.6; word-break: keep-all; }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; min-height: 100vh; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; min-height: 100vh; }
   h1 { font-family: Georgia, "Noto Serif KR", serif; font-size: 1.5rem; text-align: center; padding-top: 8px; letter-spacing: -0.5px; color: #5d402f; }
   .sub { text-align: center; color: #9a7053; font-size: 0.9rem; margin-top: -8px; }
-  .bigbtn { width: 100%; border: none; border-radius: 22px; cursor: pointer; font-size: clamp(28px, 8vw, 46px); font-weight: 800; line-height: 1.3; padding: 3.4vh 12px; color: #fff; font-family: inherit; box-shadow: 0 6px 0 rgba(82,55,36,0.28); }
+  .bigbtn { width: 100%; border: none; border-radius: 22px; cursor: pointer; font-size: clamp(26px, 7vw, 42px); font-weight: 800; line-height: 1.3; padding: 3vh 12px; color: #fff; font-family: inherit; box-shadow: 0 6px 0 rgba(82,55,36,0.28); }
   .bigbtn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(82,55,36,0.28); }
   .brown { background: #75503a; } .green { background: #1B7F3B; } .blue { background: #1250A6; } .red { background: #C62828; }
-  .gray { background: #6b6258; font-size: clamp(19px, 5vw, 28px); padding: 2vh 12px; }
+  .gray { background: #6b6258; font-size: clamp(18px, 4.6vw, 26px); padding: 1.9vh 12px; }
   .midbtn { font-size: clamp(17px, 4.5vw, 24px); padding: 1.6vh 12px; }
-  .status { font-size: clamp(24px, 7vw, 40px); font-weight: 800; text-align: center; padding: 8px 4px; }
+  .status { font-size: clamp(22px, 6vw, 34px); font-weight: 800; text-align: center; padding: 6px 4px; }
   .pulse { animation: pulse 1.2s infinite; color: #C62828; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
-  .transcript { flex: 1; min-height: 18vh; background: #fffaf2; border: 3px solid #dfcfbb; border-radius: 16px; padding: 14px; font-size: clamp(22px, 6vw, 34px); line-height: 1.55; font-weight: 600; overflow-y: auto; white-space: pre-wrap; }
-  .bigedit { width: 100%; min-height: 26vh; background: #fff; border: 3px solid #1250A6; border-radius: 16px; padding: 14px; font-size: clamp(22px, 6vw, 32px); line-height: 1.55; font-weight: 600; font-family: inherit; }
+  .transcript { flex: 1; min-height: 16vh; background: #fffaf2; border: 3px solid #dfcfbb; border-radius: 16px; padding: 14px; font-size: clamp(21px, 5.6vw, 32px); line-height: 1.55; font-weight: 600; overflow-y: auto; white-space: pre-wrap; }
+  .bigedit { width: 100%; min-height: 24vh; background: #fff; border: 3px solid #1250A6; border-radius: 16px; padding: 14px; font-size: clamp(21px, 5.6vw, 30px); line-height: 1.55; font-weight: 600; font-family: inherit; }
   .biginput { width: 100%; background: #fff; border: 3px solid #cbb99c; border-radius: 14px; padding: 12px; font-size: clamp(20px, 5.5vw, 28px); font-family: inherit; }
   .interim { color: #9a8564; }
-  .qbox { background: #fdf0d2; border: 3px solid #c18b45; border-radius: 16px; padding: 14px; font-size: clamp(22px, 6vw, 32px); line-height: 1.45; font-weight: 700; }
+  .qbox { background: #fdf0d2; border: 3px solid #c18b45; border-radius: 16px; padding: 14px; font-size: clamp(21px, 5.6vw, 30px); line-height: 1.45; font-weight: 700; color: #5d402f; }
   .hidden { display: none !important; }
+  .daycount { text-align: center; font-size: 0.9rem; color: #9a7053; font-weight: 700; }
+  .feed { display: flex; flex-direction: column; gap: 10px; max-height: 38vh; overflow-y: auto; padding: 2px; }
+  .feed:empty { display: none; }
+  .bub { max-width: 88%; padding: 11px 15px; border-radius: 18px; font-size: clamp(18px, 4.6vw, 24px); line-height: 1.5; box-shadow: 0 2px 6px rgba(78,52,34,0.07); }
+  .bub .who { display: block; font-size: 0.72rem; font-weight: 800; opacity: 0.6; margin-bottom: 3px; }
+  .bub.q { align-self: flex-start; background: #fdf0d2; border: 1px solid #e6c983; border-bottom-left-radius: 5px; color: #5d402f; }
+  .bub.a { align-self: flex-end; background: #e6efe0; border: 1px solid #a7c9aa; border-bottom-right-radius: 5px; }
+  .bub.thinking .dots i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: #c18b45; margin: 0 3px; animation: blink 1.2s infinite; }
+  .bub.thinking .dots i:nth-child(2) { animation-delay: 0.2s; }
+  .bub.thinking .dots i:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,80%,100% { opacity: 0.25; } 40% { opacity: 1; } }
   .card { background: #fffaf2; border: 1px solid #dfcfbb; border-radius: 16px; padding: 16px; box-shadow: 0 6px 20px rgba(78,52,34,0.06); }
   .card h3 { font-size: 1.05rem; color: #5d402f; margin-bottom: 6px; }
   .btn { font-size: 0.95rem; padding: 10px 14px; border-radius: 11px; border: 2px solid #b7a488; background: #fffaf2; font-family: inherit; cursor: pointer; color: #33271f; }
@@ -56,7 +67,6 @@
   .notice { background: #fdf0d2; border-radius: 12px; padding: 12px; font-size: 0.92rem; line-height: 1.5; }
   .homebtn { text-align: center; padding: 8px; }
   .homebtn button { background: none; border: none; color: #9a7053; font-size: 0.95rem; text-decoration: underline; font-family: inherit; cursor: pointer; padding: 8px; }
-  /* book */
   .book { background: #fffdf8; border: 1px solid #dfcfbb; border-radius: 18px; padding: clamp(18px, 5vw, 48px); box-shadow: 0 10px 30px rgba(78,52,34,0.08); }
   .book .cover { text-align: center; padding: 8vh 0; border-bottom: 3px double #c18b45; margin-bottom: 26px; }
   .book .cover h2 { font-family: Georgia, "Noto Serif KR", serif; font-size: clamp(30px, 7vw, 46px); color: #5d402f; letter-spacing: -1px; }
@@ -189,8 +199,9 @@
     });
   }
 
-  var T = { state: 'idle', rec: null, finalText: '', pending: '', question: '', asked: [], pid: null,
-            media: null, recorder: null, chunks: [], audioBlob: null, periodTries: 0, wakeLock: null, typed: false };
+  var T = { state: 'idle', rec: null, finalText: '', pending: '', question: '', asked: [], pid: null, subjectName: '나',
+            media: null, recorder: null, chunks: [], audioBlob: null, periodTries: 0, wakeLock: null, typed: false,
+            log: [], thinking: false };
 
   function stopAll(){
     if (T.rec) { try { T.rec.onend = null; T.rec.stop(); } catch(e){} T.rec = null; }
@@ -206,11 +217,33 @@
     }
   }
 
+  function renderFeed(){
+    var feed = document.getElementById('feed'); if (!feed) return;
+    var html = T.log.map(function(m){
+      if (m.role === 'q') return '<div class="bub q"><span class="who">❓ 질문</span>' + esc(m.text) + '</div>';
+      return '<div class="bub a"><span class="who">🗣 ' + esc(T.subjectName || '나') + '</span>' + esc(m.text) + '</div>';
+    }).join('');
+    if (T.thinking) html += '<div class="bub q thinking"><span class="who">💭 다음 질문을 생각하고 있어요</span><span class="dots"><i></i><i></i><i></i></span></div>';
+    feed.innerHTML = html;
+    feed.scrollTop = feed.scrollHeight;
+    var dc = document.getElementById('dcount');
+    if (dc) {
+      var n = T.log.filter(function(m){ return m.role === 'a'; }).length;
+      dc.textContent = n > 0 ? '오늘 담은 이야기 ' + n + '개 · 계속 이어가요 🌾' : '오늘의 첫 이야기를 들려주세요';
+    }
+  }
+
   function renderTalk(pid){
-    T.pid = pid; T.asked = [];
+    T.pid = pid; T.asked = []; T.log = []; T.thinking = false;
     if (!getCode(pid)) { if (askCode(pid) === null) { location.hash = '#home'; return; } }
+    T.subjectName = '나';
+    fetch(API + '/projects').then(function(r){ return r.json(); }).then(function(r){
+      (r.projects || []).forEach(function(p){ if (p.id === pid && p.subject_name) T.subjectName = p.subject_name; });
+    }).catch(function(){});
     app.innerHTML =
       '<h1>🎙 이야기 들려주세요</h1>' +
+      '<div class="daycount" id="dcount"></div>' +
+      '<div class="feed" id="feed"></div>' +
       '<div id="scr" style="display:flex; flex-direction:column; gap:12px; flex:1;"></div>' +
       '<div class="homebtn no-print"><button onclick="location.hash=\'#p/' + pid + '\'">가족용 화면으로</button></div>';
     talkIdle();
@@ -218,9 +251,11 @@
 
   function talkIdle(msg){
     stopAll();
+    renderFeed();
     var scr = document.getElementById('scr'); if (!scr) return;
+    var greet = T.log.length ? '이어서 들려주시겠어요?' : (msg || '단추를 눌러 주세요');
     scr.innerHTML =
-      '<div class="status">' + esc(msg || '단추를 눌러 주세요') + '</div>' +
+      '<div class="status">' + esc(greet) + '</div>' +
       '<button class="bigbtn green" id="tStart">🎤 이야기<br>시작하기</button>' +
       '<button class="bigbtn blue" id="tSeed">❓ 질문 듣고<br>이야기하기</button>' +
       '<button class="bigbtn gray midbtn" id="tType">⌨️ 글로 쓰기 (타자)</button>';
@@ -255,6 +290,7 @@
     T.typed = false;
     T.question = question || '';
     T.finalText = ''; T.chunks = []; T.audioBlob = null;
+    renderFeed();
     var scr = document.getElementById('scr');
     scr.innerHTML =
       (question ? '<div class="qbox">❓ ' + esc(question) + '</div>' : '') +
@@ -363,7 +399,7 @@
       '<div class="status">언제쯤 일인가요?</div>' +
       '<div class="qbox">몇 년도인지, 몇 살 때인지<br>말씀해 주세요</div>' +
       '<div class="status pulse">🔴 듣고 있어요...</div>' +
-      '<div class="transcript" id="pTxt" style="min-height:8vh;"></div>' +
+      '<div class="transcript" id="pTxt" style="min-height:7vh;"></div>' +
       '<input class="biginput" id="pType" placeholder="⌨️ 타자로 입력 (예: 1965년)">' +
       '<div class="row"><button class="btn" id="pOk" style="flex:1; padding:14px;">확인</button>' +
       '<button class="btn" id="pSkip" style="flex:1; padding:14px;">잘 모르겠어요</button></div>';
@@ -403,35 +439,39 @@
   function saveTalk(periodText){
     if (T.rec) { try { T.rec.onend = null; T.rec.stop(); } catch(e){} T.rec = null; }
     T.state = 'saving';
+    if (T.question) T.log.push({ role: 'q', text: T.question });
+    T.log.push({ role: 'a', text: T.pending });
+    T.thinking = true;
+    renderFeed();
     var scr = document.getElementById('scr');
-    scr.innerHTML = '<div class="status" style="padding-top:6vh;">💾 저장하는 중...</div>';
+    scr.innerHTML = '<div class="status" style="padding-top:2vh;">💾 소중히 저장하고 있어요...</div>';
     post('/stories', T.pid, { project_id: T.pid, question: T.question || undefined, answer_raw: T.pending, period_text: periodText || '' })
       .then(function(r){
         if (!r.story) {
           if (r.error && r.error.indexOf('코드') > -1) { askCode(T.pid); }
-          talkIdle(); speak('저장 중에 문제가 생겼습니다. 잠시 후 다시 말씀해 주세요.'); return;
+          T.thinking = false; talkIdle(); speak('저장 중에 문제가 생겼습니다. 잠시 후 다시 말씀해 주세요.'); return;
         }
         var sid = r.story.id;
         if (T.audioBlob && T.audioBlob.size > 500) {
           fetch(withCode('/audio?story_id=' + sid, T.pid), { method: 'POST', headers: { 'Content-Type': 'audio/webm' }, body: T.audioBlob }).catch(function(){});
         }
         if (T.question) T.asked.push(T.question);
-        if (!T.typed) speak((periodText ? periodText + ' 이야기, ' : '이야기를 ') + '잘 저장했습니다. 다음 질문을 준비하고 있어요.');
+        if (!T.typed) speak((periodText ? periodText + ' 이야기, ' : '이야기를 ') + '잘 담았습니다. 다음 질문을 생각하고 있어요.');
         post('/interview/next', T.pid, { project_id: T.pid, question: T.question, answer: T.pending, recent: T.asked })
           .then(function(n){ offerFollowUp(n.question || null); })
           .catch(function(){ offerFollowUp(null); });
       })
-      .catch(function(){ talkIdle(); speak('인터넷 연결이 좋지 않아 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.'); });
+      .catch(function(){ T.thinking = false; renderFeed(); talkIdle(); speak('인터넷 연결이 좋지 않아 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.'); });
   }
 
   function offerFollowUp(q){
     if (T.state !== 'saving') return;
+    T.thinking = false; renderFeed();
     var scr = document.getElementById('scr'); if (!scr) return;
-    if (!q) { T.typed = false; talkIdle('✅ 잘 저장했어요!'); return; }
+    if (!q) { T.typed = false; talkIdle('✅ 잘 담았어요!'); return; }
     T.state = 'offer';
     var wasTyped = T.typed; T.typed = false;
     scr.innerHTML =
-      '<div class="status">✅ 잘 저장했어요!</div>' +
       '<div class="qbox">❓ ' + esc(q) + '</div>' +
       '<button class="bigbtn green" id="fYes">🎤 말로<br>대답하기</button>' +
       '<button class="bigbtn blue midbtn" id="fType">⌨️ 글로 대답하기</button>' +
