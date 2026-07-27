@@ -1,0 +1,17 @@
+{
+  "name": "메모텔라 — 인생책",
+  "short_name": "메모텔라",
+  "description": "말하면 한 권의 인생이 됩니다. 부모님의 목소리와 기억을 AI가 인터뷰하고 다듬어 가족 책으로 만드는 앱.",
+  "start_url": "./?src=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f8f2e8",
+  "theme_color": "#75503a",
+  "lang": "ko",
+  "categories": ["lifestyle", "books"],
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
