@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#75503a">
+<meta name="description" content="말하면 한 권의 인생이 됩니다. 부모님의 목소리와 기억을 AI가 인터뷰하고 다듬어 가족 책으로 만드는 앱.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="메모텔라">
+<link rel="manifest" href="manifest.json">
 <title>메모텔라 — 말하면, 한 권의 인생이 됩니다</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
@@ -27,6 +32,7 @@
   .interim { color: #9a8564; }
   .qbox { background: #fdf0d2; border: 3px solid #c18b45; border-radius: 16px; padding: 14px; font-size: clamp(21px, 5.6vw, 30px); line-height: 1.45; font-weight: 700; color: #5d402f; }
   .hidden { display: none !important; }
+  /* conversation feed */
   .daycount { text-align: center; font-size: 0.9rem; color: #9a7053; font-weight: 700; }
   .feed { display: flex; flex-direction: column; gap: 10px; max-height: 38vh; overflow-y: auto; padding: 2px; }
   .feed:empty { display: none; }
@@ -128,6 +134,41 @@
   function del(u, pid){ return fetch(withCode(u, pid), { method: 'DELETE' }).then(function(r){ return r.json(); }); }
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+  // ---- native: share ----
+  function shareApp(title, text){
+    var url = location.origin + location.pathname;
+    if (navigator.share) {
+      navigator.share({ title: title || '메모텔라', text: text || '말하면, 한 권의 인생이 됩니다', url: url }).catch(function(){});
+    } else {
+      try { navigator.clipboard.writeText(url); alert('주소가 복사되었습니다.\n' + url); }
+      catch(e){ prompt('아래 주소를 복사해서 공유하세요', url); }
+    }
+  }
+  // ---- native: notifications ----
+  function enableNotify(){
+    if (!('Notification' in window)) { alert('이 기기에서는 알림을 지원하지 않습니다.'); return; }
+    Notification.requestPermission().then(function(p){
+      if (p === 'granted') {
+        try { localStorage.setItem('mt_notify', '1'); } catch(e){}
+        new Notification('메모텔라', { body: '이제 이야기 기록 알림을 받아요. 오늘도 한 편 남겨보세요 🌾' });
+      } else {
+        alert('알림이 꺼져 있습니다. 휴대폰 설정에서 이 사이트의 알림을 허용해 주세요.');
+      }
+    });
+  }
+  function maybeRemind(){
+    try {
+      if (localStorage.getItem('mt_notify') !== '1') return;
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      var last = parseInt(localStorage.getItem('mt_lastRemind') || '0');
+      var now = Date.now();
+      if (now - last > 20 * 3600 * 1000) {
+        localStorage.setItem('mt_lastRemind', String(now));
+        new Notification('메모텔라', { body: '오늘의 이야기를 한 편 들려주시겠어요? 🎙' });
+      }
+    } catch(e){}
+  }
+
   function speak(text, cb){
     try { window.speechSynthesis.cancel(); } catch(e){}
     var u = new SpeechSynthesisUtterance(text);
@@ -155,7 +196,9 @@
     if (seg[0] === 'talk' && seg[1]) { if (seg[2]) setCode(seg[1], seg[2]); return renderTalk(seg[1]); }
     if (seg[0] === 'p' && seg[1]) return renderProject(seg[1]);
     if (seg[0] === 'book' && seg[1]) return renderBook(seg[1]);
+    if (seg[0] === 'order' && seg[1]) return renderOrder(seg[1]);
     if (seg[0] === 'listen' && seg[1]) return renderListen(seg[1], seg[2] || '');
+    if (seg[0] === 'admin') return renderAdmin();
     renderHome();
   }
   window.addEventListener('hashchange', route);
@@ -194,11 +237,98 @@
           '<button class="btn primary" onclick="location.hash=\'#talk/' + p.id + '\'">🎙 인터뷰 (어르신 화면)</button>' +
           '<button class="btn" onclick="location.hash=\'#p/' + p.id + '\'">📚 기록 관리 (가족용)</button>' +
           '<button class="btn" onclick="location.hash=\'#book/' + p.id + '\'">📕 웹책 보기</button>' +
+          '<button class="btn" onclick="location.hash=\'#order/' + p.id + '\'">🎁 책 주문하기</button>' +
           '</div></div>';
       }).join('');
     });
+    var tools = document.createElement('div');
+    tools.className = 'card';
+    tools.innerHTML = '<div class="row" style="justify-content:center;">' +
+      '<button class="btn" id="hShare">📤 앱 공유하기</button>' +
+      '<button class="btn" id="hNotify">🔔 알림 받기</button>' +
+      '<button class="btn" onclick="location.hash=\'#admin\'">🛠 관리자</button></div>' +
+      '<div style="text-align:center; color:#9a7053; font-size:0.8rem; margin-top:8px;">홈 화면에 추가하면 앱처럼 쓸 수 있어요</div>';
+    app.appendChild(tools);
+    document.getElementById('hShare').onclick = function(){ shareApp(); };
+    document.getElementById('hNotify').onclick = function(){ enableNotify(); };
   }
 
+  // ---------------- order (buyer) ----------------
+  function renderOrder(pid){
+    if (!getCode(pid)) { if (askCode(pid) === null) { location.hash = '#home'; return; } }
+    app.innerHTML = '<h1>🎁 인생책 주문</h1>' +
+      '<div class="notice">아버님·어머님의 이야기를 실제 책으로 만들어 가족에게 선물하세요. 주문을 남기시면 담당자가 연락드려 사양·금액·결제(계좌이체)를 안내하고 제작해 드립니다. <b>지금은 주문 접수 단계로, 이 화면에서 결제되지는 않습니다.</b></div>' +
+      '<div id="oBody"><div class="notice">불러오는 중...</div></div>' +
+      '<div class="homebtn no-print"><button onclick="location.hash=\'#p/' + pid + '\'">← 돌아가기</button></div>';
+    get('/project?id=' + pid, pid).then(function(r){
+      var title = (r && r.project) ? r.project.title : '';
+      var count = (r && r.stories) ? r.stories.length : 0;
+      document.getElementById('oBody').innerHTML =
+        '<div class="card"><h3>📖 ' + esc(title) + '</h3>' +
+        '<div style="color:#9a7053; font-size:0.9rem;">지금까지 담긴 이야기 ' + count + '편</div>' +
+        '<div style="display:flex; flex-direction:column; gap:10px; margin-top:12px;">' +
+        '<label>제본 방식<select id="oStyle"><option>양장(하드커버)</option><option>무선(소프트커버)</option><option>상담 후 결정</option></select></label>' +
+        '<label>부수<input id="oCopies" type="number" min="1" value="10"></label>' +
+        '<label>받으실 분 성함<input id="oName" placeholder="예: 채기웅"></label>' +
+        '<label>연락처<input id="oPhone" placeholder="예: 010-0000-0000"></label>' +
+        '<label>배송지<input id="oAddr" placeholder="주소 (선택)"></label>' +
+        '<label>요청 사항<textarea id="oNote" placeholder="사진 복원, 행사 날짜, 특별한 요청 등 (선택)" style="min-height:80px;"></textarea></label>' +
+        '<button class="btn primary" id="oGo" style="padding:14px; font-size:1.05rem;">🎁 주문 접수하기</button>' +
+        '</div></div>';
+      document.getElementById('oGo').onclick = function(){
+        var name = document.getElementById('oName').value.trim();
+        var phone = document.getElementById('oPhone').value.trim();
+        if (!name || !phone) { alert('받으실 분 성함과 연락처를 입력해 주세요.'); return; }
+        var btn = document.getElementById('oGo'); btn.disabled = true; btn.textContent = '접수 중...';
+        post('/order', pid, {
+          project_id: pid, buyer_name: name, phone: phone,
+          address: document.getElementById('oAddr').value.trim(),
+          book_style: document.getElementById('oStyle').value,
+          copies: parseInt(document.getElementById('oCopies').value) || 1,
+          option_note: document.getElementById('oNote').value.trim()
+        }).then(function(res){
+          if (res.ok) {
+            document.getElementById('oBody').innerHTML = '<div class="card" style="text-align:center;"><h3>✅ 주문이 접수되었습니다</h3><p style="margin-top:10px; color:#584538;">담당자가 <b>' + esc(phone) + '</b>로 연락드려 사양과 금액, 결제 방법을 안내해 드리겠습니다. 감사합니다.</p></div>';
+          } else { btn.disabled = false; btn.textContent = '🎁 주문 접수하기'; alert(res.error || '접수에 실패했습니다.'); }
+        });
+      };
+    });
+  }
+
+  // ---------------- admin (maker) ----------------
+  function renderAdmin(){
+    var ac = '';
+    try { ac = localStorage.getItem('mt_admin') || ''; } catch(e){}
+    if (!ac) { ac = prompt('관리자 코드를 입력하세요'); if (!ac) { location.hash = '#home'; return; } ac = ac.trim(); try { localStorage.setItem('mt_admin', ac); } catch(e){} }
+    app.innerHTML = '<h1>🛠 관리자 · 주문 관리</h1><div id="aBody"><div class="notice">불러오는 중...</div></div>' +
+      '<div class="homebtn no-print"><button onclick="location.hash=\'#home\'">처음으로</button> · <button onclick="(function(){try{localStorage.removeItem(\'mt_admin\')}catch(e){}; location.hash=\'#home\';})()">관리자 로그아웃</button></div>';
+    fetch(API + '/orders?admin=' + encodeURIComponent(ac)).then(function(r){ return r.json(); }).then(function(r){
+      var el = document.getElementById('aBody');
+      if (r.error) { try { localStorage.removeItem('mt_admin'); } catch(e){} el.innerHTML = '<div class="notice">' + esc(r.error) + ' 다시 시도해 주세요.</div>'; return; }
+      var os = r.orders || [];
+      if (!os.length) { el.innerHTML = '<div class="notice">아직 접수된 주문이 없습니다.</div>'; return; }
+      var STAT = ['신규','연락완료','제작중','발송','완료'];
+      el.innerHTML = os.map(function(o){
+        var opts = STAT.map(function(s){ return '<option' + (o.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('');
+        return '<div class="card" style="margin-bottom:10px;">' +
+          '<div style="font-weight:800; color:#5d402f;">' + esc(o.buyer_name) + ' · ' + esc(o.phone) + '</div>' +
+          '<div style="color:#9a7053; font-size:0.85rem; margin:3px 0;">' + new Date(o.created_at).toLocaleString('ko-KR') + ' · ' + esc(o.project_title || '') + '</div>' +
+          '<div style="font-size:0.95rem;">📕 ' + esc(o.book_style || '-') + ' · ' + (o.copies || 1) + '부</div>' +
+          (o.address ? '<div style="font-size:0.9rem;">🏠 ' + esc(o.address) + '</div>' : '') +
+          (o.option_note ? '<div style="font-size:0.9rem; color:#584538; margin-top:4px;">📝 ' + esc(o.option_note) + '</div>' : '') +
+          '<div class="row" style="margin-top:8px; align-items:center;"><span style="font-size:0.85rem; color:#9a7053;">상태</span>' +
+          '<select data-ostat="' + o.id + '">' + opts + '</select>' +
+          '<a class="btn" href="tel:' + esc(o.phone) + '">📞 전화</a></div></div>';
+      }).join('');
+      el.querySelectorAll('select[data-ostat]').forEach(function(sel){
+        sel.onchange = function(){
+          fetch(API + '/orders?id=' + sel.dataset.ostat + '&admin=' + encodeURIComponent(ac), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: sel.value }) });
+        };
+      });
+    });
+  }
+
+  // ---------------- interview (elder) ----------------
   var T = { state: 'idle', rec: null, finalText: '', pending: '', question: '', asked: [], pid: null, subjectName: '나',
             media: null, recorder: null, chunks: [], audioBlob: null, periodTries: 0, wakeLock: null, typed: false,
             log: [], thinking: false };
@@ -439,6 +569,7 @@
   function saveTalk(periodText){
     if (T.rec) { try { T.rec.onend = null; T.rec.stop(); } catch(e){} T.rec = null; }
     T.state = 'saving';
+    // push to conversation feed right away
     if (T.question) T.log.push({ role: 'q', text: T.question });
     T.log.push({ role: 'a', text: T.pending });
     T.thinking = true;
@@ -482,6 +613,7 @@
     if (!wasTyped) speak('이어서 하나만 더 여쭤볼까요? ' + q);
   }
 
+  // ---------------- project (family) ----------------
   var P = { data: null };
 
   function renderProject(pid){
@@ -651,11 +783,14 @@
     }
   }
 
+  // ---------------- book ----------------
   function renderBook(pid){
     if (!getCode(pid)) { if (askCode(pid) === null) { location.hash = '#home'; return; } }
     app.innerHTML = '<div id="bBody"><div class="notice">책을 준비하는 중...</div></div>' +
       '<div class="row no-print" style="justify-content:center; padding:10px;">' +
       '<button class="btn primary" onclick="window.print()">🖨 PDF로 저장 / 인쇄</button>' +
+      '<button class="btn" onclick="location.hash=\'#order/' + pid + '\'">🎁 책 주문하기</button>' +
+      '<button class="btn" id="bShare">📤 공유</button>' +
       '<button class="btn" id="bRead">🔊 읽어주기</button>' +
       '<button class="btn" id="bStop">멈춤</button>' +
       '<button class="btn" onclick="location.hash=\'#p/' + pid + '\'">← 돌아가기</button></div>';
@@ -719,9 +854,12 @@
         readParts.forEach(function(t){ var u = new SpeechSynthesisUtterance(t); u.lang = 'ko-KR'; u.rate = 0.92; window.speechSynthesis.speak(u); });
       };
       document.getElementById('bStop').onclick = stopSpeak;
+      var bs = document.getElementById('bShare');
+      if (bs) bs.onclick = function(){ shareApp(r.project.title, r.project.title + ' — 메모텔라 인생책'); };
     });
   }
 
+  // ---------------- listen (QR target) ----------------
   function renderListen(sid, code){
     app.innerHTML =
       '<h1>🔊 목소리 듣기</h1>' +
@@ -730,6 +868,14 @@
       '<audio controls style="width:100%;" src="' + API + '/audio?story_id=' + esc(sid) + '&code=' + encodeURIComponent(code) + '"></audio></div>' +
       '<div class="homebtn"><button onclick="location.hash=\'#home\'">메모텔라 처음으로</button></div>';
   }
+
+  // ---- PWA: register service worker + reminders ----
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(){});
+    });
+  }
+  maybeRemind();
 
   route();
 })();
