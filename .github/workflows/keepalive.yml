@@ -1,0 +1,18 @@
+name: keep-supabase-awake
+
+# Supabase 무료 프로젝트가 7일 미사용 시 자동 정지되는 것을 막기 위해
+# 이틀에 한 번 앱 API(/projects)를 호출해 DB 활동을 유지합니다.
+on:
+  schedule:
+    - cron: "17 6 */2 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping MemoTella API
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" "https://kxvngoyvwtumdnczwyxs.supabase.co/functions/v1/mt/api/projects")
+          echo "HTTP status: $code"
+          test "$code" = "200"
