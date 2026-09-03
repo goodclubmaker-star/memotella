@@ -190,10 +190,11 @@
   }
 
   function route(){
-    stopSpeak(); stopAll();
+    stopSpeak(); stopAll(); stopConvRec();
     var h = location.hash || '#home';
     var seg = h.slice(1).split('/');
     if (seg[0] === 'talk' && seg[1]) { if (seg[2]) setCode(seg[1], seg[2]); return renderTalk(seg[1]); }
+    if (seg[0] === 'conv' && seg[1]) return renderConv(seg[1]);
     if (seg[0] === 'p' && seg[1]) return renderProject(seg[1]);
     if (seg[0] === 'book' && seg[1]) return renderBook(seg[1]);
     if (seg[0] === 'order' && seg[1]) return renderOrder(seg[1]);
@@ -388,9 +389,11 @@
       '<div class="status">' + esc(greet) + '</div>' +
       '<button class="bigbtn green" id="tStart">🎤 이야기<br>시작하기</button>' +
       '<button class="bigbtn blue" id="tSeed">❓ 질문 듣고<br>이야기하기</button>' +
+      '<button class="bigbtn brown midbtn" id="tConv">👨‍👩‍👧 가족과 대화하며 담기</button>' +
       '<button class="bigbtn gray midbtn" id="tType">⌨️ 글로 쓰기 (타자)</button>';
     document.getElementById('tStart').onclick = function(){ startTalk(null); };
     document.getElementById('tSeed').onclick = function(){ startTalk(SEEDS[Math.floor(Math.random() * SEEDS.length)]); };
+    document.getElementById('tConv').onclick = function(){ location.hash = '#conv/' + T.pid; };
     document.getElementById('tType').onclick = function(){ startTyping(null); };
   }
 
@@ -419,20 +422,39 @@
     if (!makeRec(true)) { startTyping(question); return; }
     T.typed = false;
     T.question = question || '';
-    T.finalText = ''; T.chunks = []; T.audioBlob = null;
+    T.finalText = ''; T.chunks = []; T.audioBlob = null; T.micStarted = false;
     renderFeed();
     var scr = document.getElementById('scr');
     scr.innerHTML =
       (question ? '<div class="qbox">❓ ' + esc(question) + '</div>' : '') +
-      '<div class="status pulse">🔴 듣고 있어요...</div>' +
-      '<div class="transcript" id="tTxt"></div>' +
-      '<button class="bigbtn red" id="tDone">✅ 다 했어요</button>' +
-      '<div class="row"><button class="btn" id="tEdit" style="flex:1; padding:14px;">✏️ 글로 고치기</button>' +
+      '<div class="status" id="tStatus">🔊 질문을 읽어드릴게요<br><span style="font-size:0.66em; color:#9a7053; font-weight:600;">다 안 들으셔도 바로 말하거나 쓰셔도 돼요</span></div>' +
+      '<div class="transcript hidden" id="tTxt"></div>' +
+      '<button class="bigbtn green" id="tSpeakNow">🎤 지금 바로<br>말할게요</button>' +
+      '<button class="bigbtn red hidden" id="tDone">✅ 다 했어요</button>' +
+      '<div class="row"><button class="btn" id="tType" style="flex:1; padding:14px;">⌨️ 글로 답하기</button>' +
       '<button class="btn" id="tCancel" style="flex:1; padding:14px;">그만두기</button></div>';
+    document.getElementById('tSpeakNow').onclick = function(){ stopSpeak(); beginTalkNow(); };
     document.getElementById('tDone').onclick = askPeriod;
-    document.getElementById('tEdit').onclick = editTranscript;
+    document.getElementById('tType').onclick = function(){
+      if (T.micStarted) { editTranscript(); }
+      else { stopSpeak(); stopAll(); startTyping(T.question); }
+    };
     document.getElementById('tCancel').onclick = function(){ talkIdle(); };
     keepAwake();
+    T.state = 'listening';
+    var intro = question ? question + ' 천천히 편하게 말씀해 주세요.' : '네, 듣고 있어요. 편하게 이야기해 주세요. 다 하시면 빨간 단추를 눌러 주세요.';
+    speak(intro, function(){ beginTalkNow(); });
+  }
+
+  // barge-in: begin listening immediately (from the button tap or when the question finishes)
+  function beginTalkNow(){
+    if (T.state !== 'listening' || T.micStarted) return;
+    T.micStarted = true;
+    var st = document.getElementById('tStatus'); if (st){ st.className = 'status pulse'; st.innerHTML = '🔴 듣고 있어요...'; }
+    var sn = document.getElementById('tSpeakNow'); if (sn) sn.classList.add('hidden');
+    var tx = document.getElementById('tTxt'); if (tx) tx.classList.remove('hidden');
+    var dn = document.getElementById('tDone'); if (dn) dn.classList.remove('hidden');
+    var ty = document.getElementById('tType'); if (ty) ty.textContent = '✏️ 글로 고치기';
     if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder) {
       navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
         T.media = stream;
@@ -444,9 +466,7 @@
         } catch(e){}
       }).catch(function(){});
     }
-    var intro = question ? question + ' 천천히 편하게 말씀해 주세요.' : '네, 듣고 있어요. 편하게 이야기해 주세요. 다 하시면 빨간 단추를 눌러 주세요.';
-    T.state = 'listening';
-    speak(intro, function(){ beginTalkRec(); });
+    beginTalkRec();
   }
 
   function beginTalkRec(){
@@ -613,6 +633,156 @@
     if (!wasTyped) speak('이어서 하나만 더 여쭤볼까요? ' + q);
   }
 
+  // ---------------- conversation mode (record a natural family chat, extract into a story) ----------------
+  var CV = { pid: null, text: '', rec: null, recording: false };
+
+  function stopConvRec(){
+    CV.recording = false;
+    if (CV.rec) { try { CV.rec.onend = null; CV.rec.stop(); } catch(e){} CV.rec = null; }
+  }
+
+  function renderConv(pid){
+    stopAll();
+    CV = { pid: pid, text: '', rec: null, recording: false };
+    if (!getCode(pid)) { if (askCode(pid) === null) { location.hash = '#home'; return; } }
+    app.innerHTML =
+      '<h1>👨‍👩‍👧 대화로 담기</h1>' +
+      '<div id="cvscr" style="display:flex; flex-direction:column; gap:12px; flex:1;"></div>' +
+      '<div class="homebtn no-print"><button onclick="location.hash=\'#p/' + pid + '\'">가족용 화면으로</button></div>';
+    convIdle();
+  }
+
+  function convIdle(){
+    stopConvRec();
+    var scr = document.getElementById('cvscr'); if (!scr) return;
+    scr.innerHTML =
+      '<div class="notice">휴대폰을 가운데 두고 어르신과 가족이 편하게 이야기를 나누세요. 나눈 대화를 글로 받아 적었다가, 버튼 한 번이면 AI가 어르신의 이야기를 중심으로 깔끔한 글로 정리해 드려요. 인터뷰처럼 질문에 답하지 않으셔도 됩니다.</div>' +
+      '<div class="status">준비되면 눌러 주세요</div>' +
+      '<button class="bigbtn green" id="cvStart">🔴 대화 녹음<br>시작하기</button>' +
+      '<button class="bigbtn gray midbtn" id="cvType">⌨️ 대화 내용을 글로 붙여넣기</button>';
+    document.getElementById('cvStart').onclick = convStart;
+    document.getElementById('cvType').onclick = function(){ convReview(''); };
+  }
+
+  function convStart(){
+    if (!makeRec(true)) { alert('이 기기에서는 음성 인식을 지원하지 않아요. 대화 내용을 글로 입력해 주세요.'); convReview(CV.text || ''); return; }
+    CV.recording = true;
+    keepAwake();
+    var scr = document.getElementById('cvscr'); if (!scr) return;
+    scr.innerHTML =
+      '<div class="status pulse">🔴 대화를 듣고 있어요...</div>' +
+      '<div class="notice" style="padding:8px 12px;">천천히 편하게 이야기 나누세요. 다 하시면 아래 큰 단추를 눌러 주세요.</div>' +
+      '<div class="transcript" id="cvTxt" style="min-height:30vh;">' + esc(CV.text) + '</div>' +
+      '<button class="bigbtn red" id="cvStop">⏹ 대화 끝내고<br>이야기로 정리하기</button>';
+    document.getElementById('cvStop').onclick = function(){ convReview(CV.text.trim()); };
+    convRec();
+  }
+
+  function convRec(){
+    if (!CV.recording) return;
+    CV.rec = makeRec(true);
+    if (!CV.rec) return;
+    CV.rec.onresult = function(ev){
+      var interim = '';
+      for (var i = ev.resultIndex; i < ev.results.length; i++) {
+        var t = ev.results[i][0].transcript;
+        if (ev.results[i].isFinal) CV.text += t + ' '; else interim += t;
+      }
+      var el = document.getElementById('cvTxt'); if (!el) return;
+      el.innerHTML = '';
+      el.appendChild(document.createTextNode(CV.text));
+      var sp = document.createElement('span'); sp.className = 'interim';
+      sp.appendChild(document.createTextNode(interim)); el.appendChild(sp);
+      el.scrollTop = el.scrollHeight;
+    };
+    CV.rec.onerror = function(ev){
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+        CV.recording = false;
+        alert('마이크 사용을 허용해 주셔야 합니다. 화면에 허용 창이 나오면 허용을 눌러 주세요.');
+        convReview(CV.text.trim());
+      }
+    };
+    CV.rec.onend = function(){ if (CV.recording) { try { convRec(); } catch(e){} } };
+    try { CV.rec.start(); } catch(e){}
+  }
+
+  function convReview(text){
+    stopConvRec();
+    CV.text = text || '';
+    var scr = document.getElementById('cvscr'); if (!scr) return;
+    scr.innerHTML =
+      '<div class="status">이렇게 담겼어요</div>' +
+      '<div class="notice" style="padding:8px 12px;">가족들 목소리가 섞여 있어도 괜찮아요. 필요하면 아래 글을 고치고, 초록 단추를 누르면 AI가 어르신의 이야기를 중심으로 깔끔하게 정리해 드려요.</div>' +
+      '<textarea class="bigedit" id="cvEdit" style="min-height:26vh;" placeholder="여기에 나눈 대화가 들어갑니다. 직접 붙여넣거나 고쳐도 됩니다.">' + esc(CV.text) + '</textarea>' +
+      '<input class="biginput" id="cvWhen" placeholder="언제쯤 이야기인가요? (예: 어린 시절, 1970년대)">' +
+      '<button class="bigbtn green" id="cvSave">✨ AI로 이야기<br>정리해서 담기</button>' +
+      '<div class="row"><button class="btn" id="cvMore" style="flex:1; padding:14px;">🔴 이어서 더 녹음</button>' +
+      '<button class="btn" id="cvBack" style="flex:1; padding:14px;">처음으로</button></div>';
+    document.getElementById('cvSave').onclick = convSave;
+    document.getElementById('cvMore').onclick = function(){ CV.text = document.getElementById('cvEdit').value; if (CV.text && !/\s$/.test(CV.text)) CV.text += ' '; convStart(); };
+    document.getElementById('cvBack').onclick = convIdle;
+  }
+
+  function convSave(){
+    var ta = document.getElementById('cvEdit'); if (!ta) return;
+    var txt = ta.value.trim();
+    if (!txt) { alert('대화 내용이 비어 있어요.'); return; }
+    if (txt.length > 8000) txt = txt.slice(0, 8000);
+    var when = (document.getElementById('cvWhen').value || '').trim();
+    var scr = document.getElementById('cvscr');
+    scr.innerHTML = '<div class="status" style="padding-top:3vh;">✨ AI가 이야기를 정리하고 있어요...<br><span style="font-size:0.7em; color:#9a7053;">잠시만 기다려 주세요</span></div>';
+    post('/stories', CV.pid, { project_id: CV.pid, question: '가족과의 대화', answer_raw: txt, period_text: when || '' })
+      .then(function(r){
+        if (!r.story) {
+          if (r.error && r.error.indexOf('코드') > -1) askCode(CV.pid);
+          alert(r.error || '저장에 실패했습니다.'); convReview(txt); return;
+        }
+        var sid = r.story.id;
+        post('/polish', CV.pid, { story_id: sid })
+          .then(function(p){ convResult(sid, r.story.answer_raw || txt, (p && p.polished) || null); })
+          .catch(function(){ convResult(sid, txt, null); });
+      })
+      .catch(function(){ alert('인터넷 연결이 좋지 않아 저장하지 못했습니다.'); convReview(txt); });
+  }
+
+  function convDoneScreen(){
+    var scr = document.getElementById('cvscr'); if (!scr) return;
+    scr.innerHTML =
+      '<div class="status">✅ 잘 담았어요!</div>' +
+      '<button class="bigbtn green" id="cvAgain">🔴 또 대화 담기</button>' +
+      '<button class="bigbtn gray midbtn" onclick="location.hash=\'#p/' + CV.pid + '\'">📚 기록 관리로 가기</button>';
+    document.getElementById('cvAgain').onclick = convIdle;
+  }
+
+  function convResult(sid, raw, polished){
+    var scr = document.getElementById('cvscr'); if (!scr) return;
+    if (!polished) {
+      scr.innerHTML =
+        '<div class="status">✅ 대화를 담았어요!</div>' +
+        '<div class="notice">‘기록 관리’ 화면에서 내용을 확인하고 ✨AI로 다듬기를 눌러 정리할 수 있어요.</div>' +
+        '<button class="bigbtn green" id="cvAgain">🔴 또 대화 담기</button>' +
+        '<button class="bigbtn gray midbtn" onclick="location.hash=\'#p/' + CV.pid + '\'">📚 기록 관리로 가기</button>';
+      document.getElementById('cvAgain').onclick = convIdle;
+      return;
+    }
+    scr.innerHTML =
+      '<div class="status">✨ 이렇게 정리했어요</div>' +
+      '<div class="compare">' +
+      '<div class="pane"><b>나눈 대화 원문 (그대로 보존)</b>' + esc(raw) + '</div>' +
+      '<div class="pane polish"><b>✨ AI가 정리한 이야기 (자유롭게 고치세요)</b><textarea id="cvPol" style="border:none; background:transparent; padding:0; min-height:150px; width:100%;">' + esc(polished) + '</textarea></div>' +
+      '</div>' +
+      '<button class="bigbtn green" id="cvApprove">✔ 이 글로 담기</button>' +
+      '<div class="row"><button class="btn" id="cvAgain2" style="flex:1; padding:14px;">🔴 또 대화 담기</button>' +
+      '<button class="btn" style="flex:1; padding:14px;" onclick="location.hash=\'#p/' + CV.pid + '\'">📚 기록 관리</button></div>';
+    document.getElementById('cvApprove').onclick = function(){
+      var b = document.getElementById('cvApprove'); b.disabled = true; b.textContent = '담는 중...';
+      post('/approve', CV.pid, { story_id: sid, approved: true, text: document.getElementById('cvPol').value })
+        .then(function(){ convDoneScreen(); })
+        .catch(function(){ b.disabled = false; b.textContent = '✔ 이 글로 담기'; alert('저장에 실패했습니다.'); });
+    };
+    document.getElementById('cvAgain2').onclick = convIdle;
+  }
+
   // ---------------- project (family) ----------------
   var P = { data: null };
 
@@ -640,6 +810,7 @@
       '<div class="card"><h3>📖 ' + esc(r.project.title) + '</h3>' +
       '<div class="row" style="margin-top:8px;">' +
       '<button class="btn primary" onclick="location.hash=\'#talk/' + pid + '\'">🎙 인터뷰 시작</button>' +
+      '<button class="btn" onclick="location.hash=\'#conv/' + pid + '\'">👨‍👩‍👧 대화로 담기</button>' +
       '<button class="btn" onclick="location.hash=\'#book/' + pid + '\'">📕 웹책 보기</button>' +
       '</div></div>';
     var byChapter = {};
