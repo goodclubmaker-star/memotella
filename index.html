@@ -911,11 +911,77 @@
       (s.audio_path ? '<audio controls preload="none" src="' + withCode('/audio?story_id=' + s.id, pid) + '"></audio>' : '') +
       '<div class="row" style="margin-top:10px;">' +
         '<button class="btn" data-act="polish" data-id="' + s.id + '">✨ AI로 다듬기</button>' +
+        (s.audio_path ? '<button class="btn" data-act="whisper" data-id="' + s.id + '">🎧 정확히 받아쓰기</button>' : '') +
         '<label class="btn" style="cursor:pointer;">📷 사진<input type="file" accept="image/*" data-photo="' + s.id + '" style="display:none;"></label>' +
         '<button class="btn" data-act="period" data-id="' + s.id + '">시기 수정</button>' +
         '<select style="width:auto;" data-move="' + s.id + '">' + opts + '</select>' +
         '<button class="btn warn" data-act="del" data-id="' + s.id + '">삭제</button>' +
       '</div><div class="compare-slot"></div></div>';
+  }
+
+  // ---- on-device speech-to-text (Whisper via transformers.js) — re-transcribe a saved recording accurately ----
+  var WHISPER = { transcriber: null };
+  function decodeTo16k(blob){
+    return blob.arrayBuffer().then(function(ab){
+      var AC = window.AudioContext || window.webkitAudioContext;
+      var ac = new AC();
+      return ac.decodeAudioData(ab).then(function(decoded){
+        try { ac.close(); } catch(e){}
+        var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        var frames = Math.max(1, Math.ceil(decoded.duration * 16000));
+        var off = new OAC(1, frames, 16000);
+        var src = off.createBufferSource(); src.buffer = decoded; src.connect(off.destination); src.start(0);
+        return off.startRendering();
+      }).then(function(rendered){ return rendered.getChannelData(0); });
+    });
+  }
+  function ensureTranscriber(onStatus){
+    if (WHISPER.transcriber) return Promise.resolve(WHISPER.transcriber);
+    onStatus('AI 받아쓰기 준비 중이에요... 처음 한 번만 모델을 내려받아요 (수십 MB, 잠시 걸립니다)');
+    return import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2').then(function(mod){
+      try { mod.env.allowLocalModels = false; } catch(e){}
+      return mod.pipeline('automatic-speech-recognition', 'Xenova/whisper-base', {
+        quantized: true,
+        progress_callback: function(p){
+          if (p && p.status === 'progress' && p.progress != null) onStatus('AI 모델 내려받는 중 ' + Math.round(p.progress) + '% ...');
+        }
+      });
+    }).then(function(tr){ WHISPER.transcriber = tr; return tr; });
+  }
+  function runWhisper(id){
+    var pid = P.data.pid;
+    var slot = document.querySelector('#st-' + id + ' .compare-slot');
+    if (!slot) return;
+    slot.innerHTML = '<div class="notice" id="wst-' + id + '">🎧 녹음을 불러오는 중...</div>';
+    var setStatus = function(m){ var e = document.getElementById('wst-' + id); if (e) e.textContent = m; };
+    fetch(withCode('/audio?story_id=' + id, pid)).then(function(resp){
+      if (!resp.ok) throw new Error('audio');
+      return resp.blob();
+    }).then(function(blob){
+      setStatus('🎧 녹음을 분석 준비 중...');
+      return decodeTo16k(blob);
+    }).then(function(audio){
+      return ensureTranscriber(setStatus).then(function(tr){
+        setStatus('✍️ 받아쓰는 중이에요... 잠시만요 (1분 녹음에 몇십 초 걸려요)');
+        return tr(audio, { language: 'korean', task: 'transcribe', chunk_length_s: 30, stride_length_s: 5 });
+      });
+    }).then(function(out){
+      var text = (out && out.text || '').trim();
+      if (!text) throw new Error('empty');
+      slot.innerHTML =
+        '<div class="compare"><div class="pane polish"><b>🎧 녹음을 다시 받아쓴 글 (고칠 수 있어요)</b>' +
+        '<textarea id="wtx-' + id + '" style="border:none; background:transparent; padding:0; min-height:120px; width:100%;">' + esc(text) + '</textarea></div></div>' +
+        '<div class="row" style="margin-top:8px;">' +
+        '<button class="btn primary" id="wsave-' + id + '">✔ 이 글로 원문 바꾸기</button>' +
+        '<button class="btn" id="wclose-' + id + '">닫기</button></div>';
+      document.getElementById('wsave-' + id).onclick = function(){
+        var b = document.getElementById('wsave-' + id); b.disabled = true; b.textContent = '저장 중...';
+        patch('/stories?id=' + id, pid, { answer_raw: document.getElementById('wtx-' + id).value }).then(function(){ renderProject(pid); });
+      };
+      document.getElementById('wclose-' + id).onclick = function(){ slot.innerHTML = ''; };
+    }).catch(function(e){
+      setStatus('받아쓰기에 실패했어요. 이 기기가 녹음 형식을 못 읽거나 사양이 부족할 수 있어요. 안드로이드 크롬에서 다시 시도해 보세요.');
+    });
   }
 
   function storyAction(act, id, btn){
@@ -951,6 +1017,8 @@
         };
         document.getElementById('no-' + id).onclick = function(){ slot.innerHTML = ''; };
       });
+    } else if (act === 'whisper') {
+      runWhisper(id);
     }
   }
 
